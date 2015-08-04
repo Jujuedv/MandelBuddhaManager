@@ -1,0 +1,5 @@
+.depend
+mbmanager
+*.o
+storage/
+
