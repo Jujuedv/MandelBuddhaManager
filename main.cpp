@@ -19,6 +19,7 @@ int main(int argc, char** argv)
 	string line;
 
 	Storage store;
+	store.load();
 	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w> <h> <steps> <div> <cw> <ch>\n");
 
 	bool calculating = false;

@@ -1,4 +1,5 @@
 #include "Storage.h"
+#include <sys/stat.h>
 
 void PixelData::load(FILE *file)
 {
@@ -94,7 +95,8 @@ void StorageElement::save()
 	auto file = fopen(filename, "w");
 
 	for (int i = 0; i < width * height; ++i)
-		fprintf(file, "%d\n", divergenceTable[i]);
+		fprintf(file, "%d ", divergenceTable[i]);
+	fprintf(file, "\n");
 	for (int i = 0; i < width * height; ++i)
 		data[i].save(file);
 
@@ -109,6 +111,7 @@ void Storage::load()
 	if(!file)
 	{
 		uidC = 0;
+		printf("no storage exists... will be created on calculations...\n");
 		return;
 	}
 	fscanf(file, "%d\n", &uidC);
@@ -125,6 +128,7 @@ void Storage::load()
 
 void Storage::save()
 {
+	mkdir("storage", 0777);
 	auto file = fopen("storage/storage.index", "w");
 	fprintf(file, "%d\n", uidC);
 
