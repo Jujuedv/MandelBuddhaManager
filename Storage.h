@@ -48,8 +48,10 @@ struct StorageElement
 
 struct Storage
 {
-	vector<StorageElement> saves;
+	vector<StorageElement*> saves;
 	int uidC;
+
+	~Storage();
 
 	void load();
 	void save();

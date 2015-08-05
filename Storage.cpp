@@ -105,6 +105,14 @@ void StorageElement::save()
 	saved = true;
 }
 
+Storage::~Storage()
+{
+	save();
+	for(auto s : saves)
+		delete s;
+	saves.clear();
+}
+
 void Storage::load()
 {
 	auto file = fopen("storage/storage.index", "r");
@@ -121,8 +129,9 @@ void Storage::load()
 	saves.resize(N);
 	for (auto &s : saves)
 	{
-		fscanf(file, "%d\n", &s.uid);
-		s.loadHeader();
+		s = new StorageElement();
+		fscanf(file, "%d\n", &s->uid);
+		s->loadHeader();
 	}
 }
 
@@ -135,10 +144,10 @@ void Storage::save()
 	fprintf(file, "%d\n", (int)saves.size());
 	for (auto &s : saves)
 	{
-		fprintf(file, "%d\n", s.uid);
-		if (!s.headerSaved)
-			s.saveHeader();
-		if (!s.saved)
-			s.save();
+		fprintf(file, "%d\n", s->uid);
+		if (!s->headerSaved)
+			s->saveHeader();
+		if (!s->saved)
+			s->save();
 	}
 }

@@ -12,51 +12,51 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 	this->store = store;
 	this->storageElem = nullptr;
 
-	for (auto &s : store->saves)
+	for (auto s : store->saves)
 	{
-		if (s.formula != formula)
+		if (s->formula != formula)
 			continue;
-		if (s.width != w)
+		if (s->width != w)
 			continue;
-		if (s.height != h)
+		if (s->height != h)
 			continue;
-		if (s.steps != steps)
+		if (s->steps != steps)
 			continue;
-		if (s.divergenceThreshold != div)
+		if (s->divergenceThreshold != div)
 			continue;
-		if (abs(s.complexHeight - ch) > 1e-9)
+		if (abs(s->complexHeight - ch) > 1e-9)
 			continue;
-		if (abs(s.complexWidth - cw) > 1e-9)
+		if (abs(s->complexWidth - cw) > 1e-9)
 			continue;
 
-		this->storageElem = &s;
+		this->storageElem = s;
 
-		if (!s.loaded)
-			s.load();
+		if (!s->loaded)
+			s->load();
 		return;
 	}
 
-	store->saves.emplace_back();
-	StorageElement &s = store->saves.back();
-	this->storageElem = &s;
+	store->saves.push_back(new StorageElement());
+	StorageElement *s = store->saves.back();
+	this->storageElem = s;
 
-	s.formula = formula;
-	s.uid = store->uidC++;
-	s.divergenceThreshold = div;
-	s.width = w;
-	s.height = h;
-	s.steps = steps;
-	s.computedSteps = 0;
-	s.complexWidth = cw;
-	s.complexHeight = ch;
-	s.loaded = true;
-	s.saved	= false;
-	s.headerSaved = false;
+	s->formula = formula;
+	s->uid = store->uidC++;
+	s->divergenceThreshold = div;
+	s->width = w;
+	s->height = h;
+	s->steps = steps;
+	s->computedSteps = 0;
+	s->complexWidth = cw;
+	s->complexHeight = ch;
+	s->loaded = true;
+	s->saved = false;
+	s->headerSaved = false;
 
-	s.divergenceTable.resize(w*h);
-	s.data.resize(w*h);
+	s->divergenceTable.resize(w*h);
+	s->data.resize(w*h);
 
-	createDivergencyTable(s);
+	createDivergencyTable(*s);
 
 	store->save();
 }
