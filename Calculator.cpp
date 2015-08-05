@@ -65,6 +65,8 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 
 void Calculator::createDivergencyTable(StorageElement &s)
 {
+	printf("generating divergency table... ");
+	fflush(stdout);
 	auto diver = FormulaManager::diverges[s.formula];
 	for(int x = 0; x < s.width; ++x)
 	{
@@ -72,10 +74,14 @@ void Calculator::createDivergencyTable(StorageElement &s)
 		{
 			double x1 = x*s.complexWidth/s.width-s.complexWidth/2;
 			double x2 = y*s.complexHeight/s.height-s.complexHeight/2;
-			s.divergenceTable[x+y*s.width] = diver(x1, x2, s)?1:0;
+			int val = diver(x1, x2, s)?1:0;
+			for(int dx = max(-10, -x); x + dx < s.width && dx <= 10; ++dx)
+				for(int dy = max(-10, -y); y + dy < s.height && dy <= 10; ++dy)
+					s.divergenceTable[(x+dx)+(y+dy)*s.width] |= val;
 		}
 	}
-	printf("divergencyTable generated\n");
+	
+	printf("done\n");
 }
 
 void Calculator::startCalculation()
