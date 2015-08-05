@@ -3,7 +3,7 @@ HDR=Calculator.h Storage.h FormulaManager.h Formulas.h
 BIN=mbmanager
 OBJ=$(SRC:%cpp=%o)
 #CXX=/usr/bin/clang++
-CXXFLAGS=-std=c++11 -g
+CXXFLAGS=-std=c++14 -g
 LDFLAGS=-lSDL2 -lpthread
 
 all: .depend mbmanager
