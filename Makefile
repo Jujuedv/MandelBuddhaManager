@@ -4,7 +4,7 @@ BIN=mbmanager
 OBJ=$(SRC:%cpp=%o)
 #CXX=/usr/bin/clang++
 CXXFLAGS=-std=c++11 -g
-LDFLAGS=-lSDL2
+LDFLAGS=-lSDL2 -lpthread
 
 all: .depend mbmanager
 
@@ -15,7 +15,7 @@ clean:
 	$(CXX) -MM $(CXXFLAGS) $(SRC) > .depend
 
 mbmanager: $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $(BIN) $(LDFLAGS) $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $(BIN) $(OBJ) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $<

@@ -1,6 +1,5 @@
 #include "Calculator.h"
 
-
 Calculator::Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *ok, Storage *store)
 {
 	if(!FormulaManager::formulas.count(formula))
@@ -12,7 +11,6 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 
 	this->store = store;
 	this->storageElem = nullptr;
-	this->calculating = calculating;
 
 	for (auto &s : store->saves)
 	{
@@ -37,7 +35,11 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 			s.load();
 		return;
 	}
-	StorageElement s;
+
+	store->saves.emplace_back();
+	StorageElement &s = store->saves.back();
+	this->storageElem = &s;
+
 	s.formula = formula;
 	s.uid = store->uidC++;
 	s.divergenceThreshold = div;
@@ -56,7 +58,6 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 
 	createDivergencyTable(s);
 
-	store->saves.push_back(s);
 	store->save();
 }
 
@@ -83,5 +84,24 @@ void Calculator::createDivergencyTable(StorageElement &s)
 
 void Calculator::startCalculation()
 {
+	for(int i = 0; i < 4; ++i)
+	{
+		threads.emplace_back(&Calculator::worker, this, i);
+		threadData.emplace_back();
+		threadData.back().data.resize(storageElem->width * storageElem->height);
+		threadData.back().cache.resize(storageElem->steps);
+	}
+}
 
+void Calculator::stopCalculation()
+{
+	stop = true;
+	for(auto &t : threads)
+		t.join();
+	threads.clear();
+	threadData.clear();
+}
+
+void Calculator::worker(int threadNum)
+{
 }
