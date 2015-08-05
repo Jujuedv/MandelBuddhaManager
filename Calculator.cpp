@@ -34,9 +34,9 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 		if (!s.loaded)
 		{
 			s.load();
-			startCalculation();
-			return;
 		}
+		startCalculation();
+		return;
 	}
 	StorageElement s;
 	s.formula = formula;
