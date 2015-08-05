@@ -1,11 +1,12 @@
 #include "Calculator.h"
 
 
-Calculator::Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *calculating, Storage *store)
+Calculator::Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *ok, Storage *store)
 {
 	if(!FormulaManager::formulas.count(formula))
 	{
 		fprintf(stderr, "Formula '%s' not available.\nAdd it to Formulas.h and recompile.\n", formula);
+		*ok = false;
 		return;
 	}
 
@@ -31,11 +32,9 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 			continue;
 
 		this->storageElem = &s;
+
 		if (!s.loaded)
-		{
 			s.load();
-		}
-		startCalculation();
 		return;
 	}
 	StorageElement s;
@@ -59,8 +58,6 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 
 	store->saves.push_back(s);
 	store->save();
-
-	startCalculation();
 }
 
 void Calculator::createDivergencyTable(StorageElement &s)

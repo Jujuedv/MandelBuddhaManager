@@ -20,9 +20,11 @@ int main(int argc, char** argv)
 
 	Storage store;
 	store.load();
+
 	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w> <h> <steps> <div> <cw> <ch>\n");
 
-	bool calculating = false;
+	Calculator* calc = nullptr;
+
 	while (getline(cin, line))
 	{
 		if (ISCMD(line, "calc"))
@@ -31,12 +33,23 @@ int main(int argc, char** argv)
 			int w = 800, h = 600, steps = 1000, div = 50;
 			double cw = 4, ch = 3;
 			sscanf(line.c_str(), "calc %s %dx%d %d %d %lf %lf", formula, &w, &h, &steps, &div, &cw, &ch);
-			printf("--> calc %s %dx%d %d %d %lf %lf\n", formula, w, h, steps, div, cw, ch);
 
-			if (calculating)
+			if (calc) 
 				fprintf(stderr, "already calculating something.. aborting..\n");
 			else
-				Calculator(formula, w, h, steps, div, cw, ch, &calculating, &store);
+			{
+				printf("--> calc %s %dx%d %d %d %lf %lf\n", formula, w, h, steps, div, cw, ch);
+
+				bool ok = true;
+				calc = new Calculator(formula, w, h, steps, div, cw, ch, &ok, &store);
+				if(!ok)
+				{
+					delete calc;
+					calc = nullptr;
+					continue;
+				}
+				calc->startCalculation();
+			}
 		}
 	}
 

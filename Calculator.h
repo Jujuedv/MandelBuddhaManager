@@ -9,7 +9,7 @@ struct Calculator
 	Storage* store;
 	bool* calculating;
 
-	Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *calculating, Storage *store);
+	Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *ok, Storage *store);
 	void createDivergencyTable(StorageElement &s);
 	void startCalculation();
 };
