@@ -32,7 +32,11 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 
 		this->storageElem = &s;
 		if (!s.loaded)
+		{
 			s.load();
+			startCalculation();
+			return;
+		}
 	}
 	StorageElement s;
 	s.formula = formula;
@@ -55,6 +59,8 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 
 	store->saves.push_back(s);
 	store->save();
+
+	startCalculation();
 }
 
 void Calculator::createDivergencyTable(StorageElement &s)
@@ -70,4 +76,9 @@ void Calculator::createDivergencyTable(StorageElement &s)
 		}
 	}
 	printf("divergencyTable generated\n");
+}
+
+void Calculator::startCalculation()
+{
+
 }

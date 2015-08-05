@@ -11,5 +11,6 @@ struct Calculator
 
 	Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *calculating, Storage *store);
 	void createDivergencyTable(StorageElement &s);
+	void startCalculation();
 };
 
