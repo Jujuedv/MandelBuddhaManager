@@ -88,6 +88,8 @@ void Calculator::createDivergencyTable(StorageElement &s)
 
 void Calculator::startCalculation()
 {
+	printf("starting calculation...\n");
+
 	stop = false;
 	xstep = storageElem->complexWidth*pow(0.5, storageElem->computedSteps+1);
 	x = -storageElem->complexWidth/2 + xstep;
