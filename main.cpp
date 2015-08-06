@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 	Storage store;
 	store.load();
 
-	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w> <h> <steps> <div> <cw> <ch>\n");
+	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w>x<h> <steps> <div> <cw> <ch>\n");
 
 	Calculator* calc = nullptr;
 
