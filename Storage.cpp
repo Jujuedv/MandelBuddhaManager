@@ -133,6 +133,7 @@ void Storage::load()
 		fscanf(file, "%d\n", &s->uid);
 		s->loadHeader();
 	}
+	fclose(file);
 }
 
 void Storage::save()
@@ -150,4 +151,5 @@ void Storage::save()
 		if (!s->saved)
 			s->save();
 	}
+	fclose(file);
 }

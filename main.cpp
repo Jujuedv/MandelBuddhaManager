@@ -51,6 +51,19 @@ int main(int argc, char** argv)
 				calc->startCalculation();
 			}
 		}
+		else if(ISCMD(line, "stop"))
+		{
+			if(!calc)
+				fprintf(stderr, "no calculation running.. stopping nothing..\n");
+			else
+			{
+				printf("stopping... \n");
+				calc->stopCalculation();
+				delete calc;
+				calc = 0;
+				printf("stopping... done.\n");
+			}
+		}
 	}
 
 	return 0;

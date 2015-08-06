@@ -7,7 +7,7 @@ using namespace std;
 map<string, function<void(double, double, double, ThreadData&, const StorageElement&)>> FormulaManager::formulas;
 map<string, function<bool(double, double, const StorageElement&)>> FormulaManager::diverges;
 
-#define INDEX(x, y) (int(x) + settings.width * int(y))
+#define INDEX(x, y) ((xi = int(x)) + settings.width * (yi = int(y)))
 #define INDEXCOMP(x, y) INDEX((x + halfCompWidth) * compScaleHori, (y + halfCompHeight) * compScaleVert) 
 
 void FormulaManager::init()
@@ -17,8 +17,9 @@ void FormulaManager::init()
 	double halfCompHeight = settings.complexHeight / 2; \
 	double compScaleHori = settings.width / settings.complexWidth; \
 	double compScaleVert = settings.height / settings.complexHeight; \
+	int xi, yi;\
 	\
-	for (double yc = ystart; yc < halfCompHeight; yc += ystep) \
+	for (double yc = ystart; yc + ystep/2 < halfCompHeight; yc += ystep) \
 	{ \
 		complex<double> c(xc, yc), x; \
 		\
@@ -28,7 +29,7 @@ void FormulaManager::init()
 		startData.startHits++; \
 		\
 		if (!settings.divergenceTable[startindex]) \
-		continue; \
+			continue; \
 		\
 		int kDiv = 0; \
 		for (; kDiv < settings.steps; ++kDiv) \
@@ -47,7 +48,9 @@ void FormulaManager::init()
 			{ \
 				x = data.cache[k]; \
 				auto fieldIndex = INDEXCOMP(x.real(), x.imag()); \
-				auto fieldData = data.data[fieldIndex]; \
+				if(xi < 0 || xi >= settings.width || yi < 0 || yi >= settings.height)\
+					continue;\
+				auto &fieldData = data.data[fieldIndex]; \
 				\
 				fieldData.hits++; \
 				fieldData.realOrig += xc; \

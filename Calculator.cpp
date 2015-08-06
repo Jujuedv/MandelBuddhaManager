@@ -1,4 +1,8 @@
 #include "Calculator.h"
+#include <chrono>
+
+using namespace std;
+using namespace std::literals;
 
 Calculator::Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *ok, Storage *store)
 {
@@ -84,12 +88,21 @@ void Calculator::createDivergencyTable(StorageElement &s)
 
 void Calculator::startCalculation()
 {
+	stop = false;
+	xstep = storageElem->complexWidth*pow(0.5, storageElem->computedSteps+1);
+	x = -storageElem->complexWidth/2 + xstep;
+	ystep = storageElem->complexHeight*pow(0.5, storageElem->computedSteps+1);
+	y = -storageElem->complexHeight/2 + ystep;
+	stripe = 0;
+
+	threadData.resize(4);
+	calculating = 4;
+	waiting = merging = 0;
 	for(int i = 0; i < 4; ++i)
 	{
+		threadData[i].data.resize(storageElem->width * storageElem->height);
+		threadData[i].cache.resize(storageElem->steps);
 		threads.emplace_back(&Calculator::worker, this, i);
-		threadData.emplace_back();
-		threadData.back().data.resize(storageElem->width * storageElem->height);
-		threadData.back().cache.resize(storageElem->steps);
 	}
 }
 
@@ -104,4 +117,103 @@ void Calculator::stopCalculation()
 
 void Calculator::worker(int threadNum)
 {
+	auto form = FormulaManager::formulas[storageElem->formula];
+	while(!stop)
+	{
+		while(true)
+		{
+			calc.lock();
+			double myX = x + xstep * stripe;
+			double myY = y;
+			double myYstep = stripe % 2 ? ystep * 2 : ystep;
+			
+			stripe++;
+
+			calc.unlock();
+
+			if(myX + xstep/2 > storageElem->complexWidth/2)
+				break;
+
+			if(stop)
+				return;
+
+			form(myX, myY, myYstep, threadData[threadNum], *storageElem);
+		}
+
+		sync.lock();
+		calculating--;
+		while(merging)
+		{
+			sync.unlock();
+			this_thread::sleep_for(1ms);
+			sync.lock();
+		}
+		waiting++;
+		do 
+		{
+			sync.unlock();
+
+			this_thread::sleep_for(1ms);
+
+			sync.lock();
+			if(stop && calculating)
+			{
+				calculating++;
+				sync.unlock();
+				return;
+			}
+		}
+		while(calculating);
+		waiting--;
+		merging++;
+		xstep = storageElem->complexWidth*pow(0.5, storageElem->computedSteps+2);
+		x = -storageElem->complexWidth/2 + xstep;
+		ystep = storageElem->complexHeight*pow(0.5, storageElem->computedSteps+2);
+		y = -storageElem->complexHeight/2 + ystep;
+		stripe = 0;
+		sync.unlock();
+
+		merge.lock();
+		for(int i = 0; i < storageElem->width; ++i)
+		{
+			for(int j = 0; j < storageElem->height; ++j)
+			{
+				int index=i+j*storageElem->width;
+
+				auto &d = storageElem->data[index];
+				auto &td = threadData[threadNum].data[index];
+
+				d.hits += td.hits; td.hits = 0;
+				d.realOrig += td.realOrig; td.realOrig = 0;
+				d.imagOrig += td.imagOrig; td.imagOrig = 0;
+				d.realLast += td.realLast; td.realLast = 0;
+				d.imagLast += td.imagLast; td.imagLast = 0;
+				d.steps += td.steps; td.steps = 0;
+				d.reachedStep += td.reachedStep; td.reachedStep = 0;
+				d.startHits += td.startHits; td.startHits = 0;
+				d.startSteps += td.startSteps; td.startSteps = 0;
+			}
+		}
+
+		merge.unlock();
+
+		sync.lock();
+		while(waiting)
+		{
+			sync.unlock();
+			this_thread::sleep_for(1ms);
+			sync.lock();
+		}
+		merging--;
+		calculating++;
+		if(!merging)
+		{
+			printf("Saving Step %d... ", ++storageElem->computedSteps);
+			storageElem->headerSaved = false;
+			storageElem->saved = false;
+			store->save();
+			printf("done\n");
+		}
+		sync.unlock();
+	}
 }
