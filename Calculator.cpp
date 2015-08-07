@@ -139,7 +139,7 @@ void Calculator::worker(int threadNum)
 			if(stop)
 				return;
 
-			form(myX, myY, myYstep, threadData[threadNum], *storageElem);
+			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &stop);
 		}
 
 		sync.lock();

@@ -4,7 +4,7 @@
 
 using namespace std;
 
-map<string, function<void(double, double, double, ThreadData&, const StorageElement&)>> FormulaManager::formulas;
+map<string, function<void(double, double, double, ThreadData&, const StorageElement&, volatile bool*)>> FormulaManager::formulas;
 map<string, function<bool(double, double, const StorageElement&)>> FormulaManager::diverges;
 
 #define INDEX(x, y) ((xi = int(x)) + settings.width * (yi = int(y)))
@@ -12,14 +12,14 @@ map<string, function<bool(double, double, const StorageElement&)>> FormulaManage
 
 void FormulaManager::init()
 {
-#define FORMULA(f) formulas[#f] = [](double xc, double ystart, double ystep, ThreadData& data, const StorageElement& settings){ \
+#define FORMULA(f) formulas[#f] = [](double xc, double ystart, double ystep, ThreadData& data, const StorageElement& settings, volatile bool *stop){ \
 	double halfCompWidth = settings.complexWidth / 2; \
 	double halfCompHeight = settings.complexHeight / 2; \
 	double compScaleHori = settings.width / settings.complexWidth; \
 	double compScaleVert = settings.height / settings.complexHeight; \
 	int xi, yi;\
 	\
-	for (double yc = ystart; yc + ystep/2 < halfCompHeight; yc += ystep) \
+	for (double yc = ystart; yc + ystep/2 < halfCompHeight && !*stop; yc += ystep) \
 	{ \
 		complex<double> c(xc, yc), x; \
 		\
