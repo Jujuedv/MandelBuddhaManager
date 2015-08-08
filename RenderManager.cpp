@@ -1,9 +1,10 @@
 #include "RenderManager.h"
 
-ViewWindow::ViewWindow(StorageElement*elem, string t)
+ViewWindow::ViewWindow(StorageElement*elem, string t, bool u)
 {
 	storage = elem;
 	type = t;
+	update = u;
 }
 
 ViewWindow::~ViewWindow()
@@ -59,7 +60,6 @@ void ViewWindow::renderPrepare()
 			vals.push_back(data[i].hits);
 		}
 		sort(vals.begin(), vals.end());
-		printf("Total hits: %ld\n", total);
 		for(int x = 0; x < storage->width; ++x)
 		{
 			for(int y = 0; y < storage->height; ++y)
@@ -75,10 +75,14 @@ void ViewWindow::renderPrepare()
 	}
 
 	SDL_UpdateTexture(texture, 0, pixels, storage->width * sizeof(Uint32));
+
+	lastRendered = storage->computedSteps;
 }
 
 void ViewWindow::render()
 {
+	if(lastRendered != storage->computedSteps)
+		renderPrepare();
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, 0, 0);
 	SDL_RenderPresent(renderer);

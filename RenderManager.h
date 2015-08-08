@@ -20,8 +20,10 @@ struct ViewWindow
 	SDL_Texture *texture = 0;
 
 	string type;
+	bool update;
+	int lastRendered;
 
-	ViewWindow(StorageElement*, string);
+	ViewWindow(StorageElement*, string, bool);
 	~ViewWindow();
 
 	void create();

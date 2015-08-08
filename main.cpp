@@ -2,6 +2,8 @@
 
 #include <SDL2/SDL.h>
 
+#include <libtecla.h>
+
 #include "FormulaManager.h"
 #include "Calculator.h"
 #include "RenderManager.h"
@@ -122,7 +124,7 @@ int main(int argc, char** argv)
 				continue;
 			}
 
-			renderMan.addWindow(new ViewWindow(source, renderType));
+			renderMan.addWindow(new ViewWindow(source, renderType, renderSource == "current"s));
 		}
 	}
 
