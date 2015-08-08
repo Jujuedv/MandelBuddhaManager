@@ -1,5 +1,6 @@
 #include "Calculator.h"
 #include <chrono>
+#include <unistd.h>
 
 using namespace std;
 using namespace std::literals;
@@ -130,6 +131,13 @@ void Calculator::worker(int threadNum)
 			double myYstep = stripe % 2 ? ystep * 2 : ystep;
 			
 			stripe++;
+			//if(stripe * 100 / (2 << storageElem->computedSteps) != (stripe-1) * 100 / (2 << storageElem->computedSteps))
+			if(sync.try_lock())
+			{
+				printf("\033]0;%d/%d stripes\007", stripe, (2 << storageElem->computedSteps)-1);
+				fflush(stdout);
+				sync.unlock();
+			}
 
 			calc.unlock();
 
@@ -215,6 +223,7 @@ void Calculator::worker(int threadNum)
 			storageElem->saved = false;
 			store->save();
 			printf("done\n");
+			fflush(stdout);
 		}
 		sync.unlock();
 	}
