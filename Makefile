@@ -1,5 +1,5 @@
-SRC=main.cpp Calculator.cpp Storage.cpp FormulaManager.cpp
-HDR=Calculator.h Storage.h FormulaManager.h Formulas.h
+SRC=main.cpp Calculator.cpp Storage.cpp FormulaManager.cpp RenderManager.cpp
+HDR=Calculator.h Storage.h FormulaManager.h Formulas.h RenderManager.h
 BIN=mbmanager
 OBJ=$(SRC:%cpp=%o)
 #CXX=/usr/bin/clang++
