@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 				continue;
 			}
 
-			renderMan.addWindow(new ViewWindow(source, renderType, renderSource == "current"s));
+			renderMan.addWindow(new ViewWindow(source, renderType));
 		}
 	}
 

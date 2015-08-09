@@ -1,10 +1,9 @@
 #include "RenderManager.h"
 
-ViewWindow::ViewWindow(StorageElement*elem, string t, bool u)
+ViewWindow::ViewWindow(StorageElement*elem, string t)
 {
 	storage = elem;
 	type = t;
-	update = u;
 }
 
 ViewWindow::~ViewWindow()
