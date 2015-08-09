@@ -51,6 +51,36 @@ void ViewWindow::renderPrepare()
 	memset(pixels, 0, sizeof(Uint32) * storage->width * storage->height);
 
 	//TODO add other modes
+	if(type == "origin")
+	{
+		vector<double> rV, gV, bV;
+		for(int i = 0; i < storage->width * storage->height; ++i)
+		{
+			rV.push_back(data[i].realOrig + storage->complexWidth * data[i].hits / 2);
+			gV.push_back(data[i].imagOrig + storage->complexHeight * data[i].hits / 2);
+			bV.push_back((-data[i].realOrig) + storage->complexWidth * data[i].hits / 2);
+		}
+		sort(rV.begin(), rV.end());
+		sort(gV.begin(), gV.end());
+		sort(bV.begin(), bV.end());
+		for(int x = 0; x < storage->width; ++x)
+		{
+			for(int y = 0; y < storage->height; ++y)
+			{
+				auto d = data[x + y * storage->width];
+				double r = distance(rV.begin(), lower_bound(rV.begin(), rV.end(), d.realOrig + storage->complexWidth * d.hits / 2)) / (double)rV.size();
+				double g = distance(gV.begin(), lower_bound(gV.begin(), gV.end(), d.imagOrig + storage->complexHeight * d.hits / 2)) / (double)gV.size();
+				double b = distance(bV.begin(), lower_bound(bV.begin(), bV.end(), (-d.realOrig) + storage->complexWidth * d.hits / 2)) / (double)bV.size();
+				r = pow(r, 10);
+				g = pow(g, 10);
+				b = pow(b, 10);
+
+				pixels[x + y * storage->width] = 0xFF000000 | ((int)(r * 256) << 16) | ((int)(g * 256) << 8) | ((int)(b*256));
+			}
+		}
+
+	}
+	else
 	{ //FALLBACK: hits
 		uint64_t total = 0;
 		vector<uint64_t> vals;
