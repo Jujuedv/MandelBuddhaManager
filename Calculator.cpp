@@ -5,6 +5,8 @@
 using namespace std;
 using namespace std::literals;
 
+constexpr int THREADCOUNT = 7;
+
 Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip, double cw, double ch, bool *ok, Storage *store)
 {
 	if(!FormulaManager::formulas.count(formula))
@@ -101,10 +103,10 @@ void Calculator::startCalculation()
 	y = -storageElem->complexHeight/2 + ystep;
 	stripe = 0;
 
-	threadData.resize(4);
-	calculating = 4;
+	threadData.resize(THREADCOUNT);
+	calculating = THREADCOUNT;
 	waiting = merging = 0;
-	for(int i = 0; i < 4; ++i)
+	for(int i = 0; i < THREADCOUNT; ++i)
 	{
 		threadData[i].data.resize(storageElem->width * storageElem->height);
 		threadData[i].cache.resize(storageElem->steps);

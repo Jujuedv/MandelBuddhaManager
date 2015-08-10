@@ -163,7 +163,7 @@ int main(int argc, char** argv)
 	Calculator* calc = nullptr;
 	StorageElement* active = nullptr;
 
-	while (lineBuf = gl_get_line(gl, "", 0, -1))
+	while ((lineBuf = gl_get_line(gl, "", 0, -1)))
 	{
 		line = lineBuf;
 		if (ISCMD(line, "calc"))
