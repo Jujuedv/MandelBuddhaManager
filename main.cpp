@@ -62,7 +62,7 @@ CPL_MATCH_FN(autocomp)
 		set<string> possDims;
 		for(auto e : elems)
 			if(e.first)
-				possDims.insert(to_string(e.second->width) + "x"s + to_string(e.second->height));
+				possDims.insert(to_string(e.second->width) + "x" + to_string(e.second->height));
 
 		AUTO_CPL_SELECT(dims, formula, possDims, x);
 
