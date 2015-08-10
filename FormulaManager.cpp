@@ -17,6 +17,7 @@ void FormulaManager::init()
 	double halfCompHeight = settings.complexHeight / 2; \
 	double compScaleHori = settings.width / settings.complexWidth; \
 	double compScaleVert = settings.height / settings.complexHeight; \
+	double thres = settings.divergenceThreshold * settings.divergenceThreshold;\
 	int xi, yi;\
 	\
 	for (double yc = ystart; yc + ystep/2 < halfCompHeight && !*stop; yc += ystep) \
@@ -36,8 +37,8 @@ void FormulaManager::init()
 		{ \
 			f; \
 			data.cache[kDiv] = x; \
-			if (abs(x) > settings.divergenceThreshold) \
-			break; \
+			if (x.imag() * x.imag() + x.real() * x.real() > thres) \
+				break; \
 		} \
 		\
 		startData.startSteps += kDiv; \
