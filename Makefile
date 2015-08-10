@@ -2,7 +2,7 @@ SRC=main.cpp Calculator.cpp Storage.cpp FormulaManager.cpp RenderManager.cpp
 HDR=Calculator.h Storage.h FormulaManager.h Formulas.h RenderManager.h
 BIN=mbmanager
 OBJ=$(SRC:%cpp=%o)
-#CXX=/usr/bin/clang++
+CXX=/usr/bin/clang++
 CXXFLAGS=-std=c++14 -g
 LDFLAGS=-lSDL2 -lpthread -ltecla
 
