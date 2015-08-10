@@ -43,6 +43,7 @@ void StorageElement::loadHeader()
 	fscanf(file, "%d %d\n", &steps, &divergenceThreshold);
 	fscanf(file, "%lf %lf\n", &complexWidth, &complexHeight);
 	fscanf(file, "%d\n", &computedSteps);
+	fscanf(file, "%d\n", &skipPoints);
 
 	fclose(file);
 }
@@ -81,6 +82,7 @@ void StorageElement::saveHeader()
 	fprintf(file, "%d %d\n", steps, divergenceThreshold);
 	fprintf(file, "%lf %lf\n", complexWidth, complexHeight);
 	fprintf(file, "%d\n", computedSteps);
+	fprintf(file, "%d\n", skipPoints);
 
 	fclose(file);
 

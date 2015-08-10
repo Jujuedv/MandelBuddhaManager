@@ -98,12 +98,25 @@ CPL_MATCH_FN(autocomp)
 			if(!e.first || e.second->divergenceThreshold != d)
 				e.first = false;
 
+		set<string> possSkip;
+		for(auto e : elems)
+			if(e.first)
+				possSkip.insert(to_string(e.second->skipPoints));
+
+		AUTO_CPL_SELECT(skip, div, possSkip, x);
+		
+		int sk;
+		sscanf(skip.c_str(), "%d", &sk);
+		for(auto &e : elems)
+			if(!e.first || e.second->skipPoints != sk)
+				e.first = false;
+
 		set<string> possCw;
 		for(auto e : elems)
 			if(e.first)
 				possCw.insert(to_string(e.second->complexWidth));
 
-		AUTO_CPL_SELECT(cw, div, possCw, x);
+		AUTO_CPL_SELECT(cw, skip, possCw, x);
 		
 		double complW;
 		sscanf(cw.c_str(), "%lf", &complW);
@@ -145,7 +158,7 @@ int main(int argc, char** argv)
 	gl = new_GetLine(1024, 1024*1024);
 	gl_customize_completion(gl, (void*)&store, autocomp);
 	
-	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w>x<h> <steps> <div> <cw> <ch>\n");
+	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w>x<h> <steps> <div> <skip> <cw> <ch>\n");
 
 	Calculator* calc = nullptr;
 	StorageElement* active = nullptr;
@@ -156,18 +169,18 @@ int main(int argc, char** argv)
 		if (ISCMD(line, "calc"))
 		{
 			char formula[100] = "x=x*x+c";
-			int w = 800, h = 600, steps = 1000, div = 50;
+			int w = 800, h = 600, steps = 1000, div = 50, skip = 0;
 			double cw = 4, ch = 3;
-			sscanf(line.c_str(), "calc %s %dx%d %d %d %lf %lf", formula, &w, &h, &steps, &div, &cw, &ch);
+			sscanf(line.c_str(), "calc %s %dx%d %d %d %d %lf %lf", formula, &w, &h, &steps, &div, &skip, &cw, &ch);
 
 			if (calc) 
 				fprintf(stderr, "already calculating something.. aborting..\n");
 			else
 			{
-				printf("--> calc %s %dx%d %d %d %lf %lf\n", formula, w, h, steps, div, cw, ch);
+				printf("--> calc %s %dx%d %d %d %d %lf %lf\n", formula, w, h, steps, div, skip, cw, ch);
 
 				bool ok = true;
-				calc = new Calculator(formula, w, h, steps, div, cw, ch, &ok, &store);
+				calc = new Calculator(formula, w, h, steps, div, skip, cw, ch, &ok, &store);
 				if(!ok)
 				{
 					delete calc;
@@ -181,10 +194,10 @@ int main(int argc, char** argv)
 		else if(ISCMD(line, "select"))
 		{
 			char formula[100] = "x=x*x+c";
-			int w = 800, h = 600, steps = 1000, div = 50;
+			int w = 800, h = 600, steps = 1000, div = 50, skip = 0;
 			double cw = 4, ch = 3;
-			sscanf(line.c_str(), "select %s %dx%d %d %d %lf %lf", formula, &w, &h, &steps, &div, &cw, &ch);
-			printf("--> select %s %dx%d %d %d %lf %lf\n", formula, w, h, steps, div, cw, ch);
+			sscanf(line.c_str(), "select %s %dx%d %d %d %d %lf %lf", formula, &w, &h, &steps, &div, &skip, &cw, &ch);
+			printf("--> select %s %dx%d %d %d %d %lf %lf\n", formula, w, h, steps, div, skip, cw, ch);
 
 			bool found = false;
 			for (auto s : store.saves)
@@ -198,6 +211,8 @@ int main(int argc, char** argv)
 				if (s->steps != steps)
 					continue;
 				if (s->divergenceThreshold != div)
+					continue;
+				if (s->skipPoints != skip)
 					continue;
 				if (abs(s->complexHeight - ch) > 1e-9)
 					continue;

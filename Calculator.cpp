@@ -5,7 +5,7 @@
 using namespace std;
 using namespace std::literals;
 
-Calculator::Calculator(char *formula, int w, int h, int steps, int div, double cw, double ch, bool *ok, Storage *store)
+Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip, double cw, double ch, bool *ok, Storage *store)
 {
 	if(!FormulaManager::formulas.count(formula))
 	{
@@ -29,6 +29,8 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 			continue;
 		if (s->divergenceThreshold != div)
 			continue;
+		if (s->skipPoints != skip)
+			continue;
 		if (abs(s->complexHeight - ch) > 1e-9)
 			continue;
 		if (abs(s->complexWidth - cw) > 1e-9)
@@ -51,6 +53,7 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, double c
 	s->width = w;
 	s->height = h;
 	s->steps = steps;
+	s->skipPoints = skip;
 	s->computedSteps = 0;
 	s->complexWidth = cw;
 	s->complexHeight = ch;

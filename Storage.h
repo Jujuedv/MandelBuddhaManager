@@ -32,7 +32,7 @@ struct StorageElement
 	string formula;
 	int divergenceThreshold;
 	int width, height;
-	int steps, computedSteps;
+	int steps, computedSteps, skipPoints;
 	double complexWidth, complexHeight;
 
 	bool loaded = false, saved = true, headerSaved = true;

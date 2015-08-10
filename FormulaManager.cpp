@@ -44,7 +44,7 @@ void FormulaManager::init()
 		\
 		if (kDiv != settings.steps) \
 		{ \
-			for (int k = 0; k < kDiv; ++k) \
+			for (int k = settings.skipPoints; k < kDiv; ++k) \
 			{ \
 				x = data.cache[k]; \
 				auto fieldIndex = INDEXCOMP(x.real(), x.imag()); \
