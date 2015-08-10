@@ -74,7 +74,7 @@ void ViewWindow::renderPrepare()
 				g = pow(g, 10);
 				b = pow(b, 10);
 
-				pixels[x + y * storage->width] = 0xFF000000 | ((int)(r * 256) << 16) | ((int)(g * 256) << 8) | ((int)(b*256));
+				pixels[x + y * storage->width] = 0xFF000000 | ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | ((int)(b * 255));
 			}
 		}
 
@@ -98,7 +98,7 @@ void ViewWindow::renderPrepare()
 				double rel = i / (double)vals.size();
 				rel = pow(rel, 10);
 
-				pixels[x + y * storage->width] = 0xFF000000 | ((int)(rel * 256) << 8);
+				pixels[x + y * storage->width] = 0xFF000000 | ((int)(rel * 255) << 8);
 			}
 		}
 	}
