@@ -1,4 +1,6 @@
 #include <iostream>
+#include <functional>
+#include <algorithm>
 
 #include <SDL2/SDL.h>
 
@@ -12,6 +14,119 @@ using namespace std;
 
 #define ISCMD(str, cmd) (str.substr(0, strlen(cmd)) == cmd)
 
+GetLine *gl = 0;
+
+#define AUTO_CPL_SELECT(name, prev, source, source2)\
+		left = left.substr((prev).size());\
+		left.erase(left.begin(), find_if(left.begin(), left.end(), not1(ptr_fun<int,int>(isspace))));\
+		string name = left.substr(0, left.find_first_of(" \n\t"));\
+		if(left == name)\
+		{\
+			for(auto x : (source))\
+			{\
+				if((source2).substr(0, name.size()) == name)\
+				{\
+					cpl_add_completion(cpl, line, l.size()-left.size(), word_end, (source2).substr(left.size()).c_str(), 0, 0);\
+				}\
+			}\
+			return 0;\
+		}
+
+
+CPL_MATCH_FN(autocomp)
+{
+	Storage *store = (Storage*)data;
+
+	string l(line, line + word_end);
+	string cmd = l.substr(0, l.find_first_of(" \n\t"));
+	if(l == cmd)
+	{
+		static vector<string> cmds = {"calc", "select", "stop", "view"};
+		for(auto c : cmds)
+		{
+			if(c.substr(0, cmd.size()) == cmd)
+			{
+				cpl_add_completion(cpl, line, 0, word_end, c.substr(l.size()).c_str(), 0, 0);
+			}
+		}
+	}
+	else if(cmd == "calc" || cmd == "select")
+	{
+		string left = l;
+		AUTO_CPL_SELECT(formula, cmd, FormulaManager::formulas, x.first);
+
+		vector<pair<bool, StorageElement*>> elems;
+		for(auto e : store->saves)
+			elems.push_back({e->formula == formula, e});
+
+		set<string> possDims;
+		for(auto e : elems)
+			if(e.first)
+				possDims.insert(to_string(e.second->width) + "x"s + to_string(e.second->height));
+
+		AUTO_CPL_SELECT(dims, formula, possDims, x);
+
+		int w, h;
+		sscanf(dims.c_str(), "%dx%d", &w, &h);
+		for(auto &e : elems)
+			if(!e.first || e.second->width != w || e.second->height != h)
+				e.first = false;
+
+		set<string> possSteps;
+		for(auto e : elems)
+			if(e.first)
+				possSteps.insert(to_string(e.second->steps));
+
+		AUTO_CPL_SELECT(steps, dims, possSteps, x);
+		
+		int s;
+		sscanf(steps.c_str(), "%d", &s);
+		for(auto &e : elems)
+			if(!e.first || e.second->steps != s)
+				e.first = false;
+
+		set<string> possDiv;
+		for(auto e : elems)
+			if(e.first)
+				possDiv.insert(to_string(e.second->divergenceThreshold));
+
+		AUTO_CPL_SELECT(div, steps, possDiv, x);
+		
+		int d;
+		sscanf(div.c_str(), "%d", &d);
+		for(auto &e : elems)
+			if(!e.first || e.second->divergenceThreshold != d)
+				e.first = false;
+
+		set<string> possCw;
+		for(auto e : elems)
+			if(e.first)
+				possCw.insert(to_string(e.second->complexWidth));
+
+		AUTO_CPL_SELECT(cw, div, possCw, x);
+		
+		double complW;
+		sscanf(cw.c_str(), "%lf", &complW);
+		for(auto &e : elems)
+			if(!e.first || abs(e.second->complexWidth - complW) > 1e-9)
+				e.first = false;
+		
+		set<string> possCh;
+		for(auto e : elems)
+			if(e.first)
+				possCh.insert(to_string(e.second->complexHeight));
+
+		AUTO_CPL_SELECT(ch, cw, possCh, x);
+		
+		double complH;
+		sscanf(ch.c_str(), "%lf", &complH);
+		for(auto &e : elems)
+			if(!e.first || abs(e.second->complexHeight - complH) > 1e-9)
+				e.first = false;
+	}
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -20,18 +135,24 @@ int main(int argc, char** argv)
 	FormulaManager::init();
 
 	string line;
+	char *lineBuf;
 
 	Storage store;
 	store.load();
 
 	RenderManager renderMan;
+
+	gl = new_GetLine(1024, 1024*1024);
+	gl_customize_completion(gl, (void*)&store, autocomp);
 	
 	printf("mbmanager initialized.\nUsage:\ncalc <formula> <w>x<h> <steps> <div> <cw> <ch>\n");
 
 	Calculator* calc = nullptr;
+	StorageElement* active = nullptr;
 
-	while (getline(cin, line))
+	while (lineBuf = gl_get_line(gl, "", 0, -1))
 	{
+		line = lineBuf;
 		if (ISCMD(line, "calc"))
 		{
 			char formula[100] = "x=x*x+c";
@@ -54,7 +175,46 @@ int main(int argc, char** argv)
 					continue;
 				}
 				calc->startCalculation();
+				active = calc->storageElem;
 			}
+		}
+		else if(ISCMD(line, "select"))
+		{
+			char formula[100] = "x=x*x+c";
+			int w = 800, h = 600, steps = 1000, div = 50;
+			double cw = 4, ch = 3;
+			sscanf(line.c_str(), "select %s %dx%d %d %d %lf %lf", formula, &w, &h, &steps, &div, &cw, &ch);
+			printf("--> select %s %dx%d %d %d %lf %lf\n", formula, w, h, steps, div, cw, ch);
+
+			bool found = false;
+			for (auto s : store.saves)
+			{
+				if (s->formula != formula)
+					continue;
+				if (s->width != w)
+					continue;
+				if (s->height != h)
+					continue;
+				if (s->steps != steps)
+					continue;
+				if (s->divergenceThreshold != div)
+					continue;
+				if (abs(s->complexHeight - ch) > 1e-9)
+					continue;
+				if (abs(s->complexWidth - cw) > 1e-9)
+					continue;
+
+				active = s;
+
+				if (!s->loaded)
+					s->load();
+				found = true;
+				break;
+			}
+			if(found)
+				printf("selected.\n");
+			else
+				fprintf(stderr, "not found. create with 'calc'\n");
 		}
 		else if(ISCMD(line, "stop"))
 		{
@@ -71,62 +231,19 @@ int main(int argc, char** argv)
 		}
 		else if(ISCMD(line, "view"))
 		{
-			char renderType[512] = "hits", renderSource[512] = "current";
-			sscanf(line.c_str(), "view %s %s", renderType, renderSource);
-			StorageElement *source = 0;
+			char renderType[512] = "hits";
+			sscanf(line.c_str(), "view %s", renderType);
 			
-			if(renderSource == "current"s)
+			if(!active)
 			{
-				if(calc)
-					source = calc->storageElem;
-				else
-				{
-					fprintf(stderr, "No calculation is running... aborting\n");
-					continue;
-				}
-			}
-			else
-			{
-				char formula[100] = "x=x*x+c";
-				int w = 800, h = 600, steps = 1000, div = 50;
-				double cw = 4, ch = 3;
-				sscanf(line.c_str(), "view %*s %s %dx%d %d %d %lf %lf", formula, &w, &h, &steps, &div, &cw, &ch);
-				printf("--> view %s %s %dx%d %d %d %lf %lf\n", renderType, formula, w, h, steps, div, cw, ch);
-
-				for (auto s : store.saves)
-				{
-					if (s->formula != formula)
-						continue;
-					if (s->width != w)
-						continue;
-					if (s->height != h)
-						continue;
-					if (s->steps != steps)
-						continue;
-					if (s->divergenceThreshold != div)
-						continue;
-					if (abs(s->complexHeight - ch) > 1e-9)
-						continue;
-					if (abs(s->complexWidth - cw) > 1e-9)
-						continue;
-
-					source = s;
-
-					if (!s->loaded)
-						s->load();
-					break;
-				}
-			}
-
-			if(!source)
-			{
-				fprintf(stderr, "no source found... aborting...\n");
+				fprintf(stderr, "no active data set... aborting\nSelect one using 'select' or create one using 'calc'\n");
 				continue;
 			}
-
-			renderMan.addWindow(new ViewWindow(source, renderType));
+			renderMan.addWindow(new ViewWindow(active, renderType));
 		}
 	}
+
+	gl = del_GetLine(gl);
 
 	return 0;
 }
