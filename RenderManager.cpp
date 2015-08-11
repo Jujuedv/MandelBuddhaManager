@@ -1,5 +1,37 @@
 #include "RenderManager.h"
 
+const double PI = acos(-1);
+
+template<typename T>
+T clamp(const T &val, const T &mi, const T &ma)
+{
+	return max(mi, min(ma, val));
+} 
+
+int createHSLColor(double h, double s, double l) { 
+	double c = (1-abs(2*l-1))*s; 
+	double hs = h * 6;
+	double x = c * (1-abs(fmod(hs, 2)-1));
+
+	double r = 0, g = 0, b = 0;
+	switch((int)hs)
+	{
+		case 0: tie(r,g,b) = make_tuple(c,x,0); break;
+		case 1: tie(r,g,b) = make_tuple(x,c,0); break;
+		case 2: tie(r,g,b) = make_tuple(0,c,x); break;
+		case 3: tie(r,g,b) = make_tuple(0,x,c); break;
+		case 4: tie(r,g,b) = make_tuple(x,0,c); break;
+		case 5: tie(r,g,b) = make_tuple(c,0,x); break;
+	}
+
+	double m = l - 0.5 * c;
+	r = clamp(r+m, 0., 1.);
+	g = clamp(g+m, 0., 1.);
+	b = clamp(b+m, 0., 1.);
+
+	return 0xFF000000 | ((int)(r * 255) << 16) | ((int)(g * 255) << 8) | ((int)(b * 255));
+}
+
 ViewWindow::ViewWindow(StorageElement*elem, string t)
 {
 	storage = elem;
@@ -78,6 +110,34 @@ void ViewWindow::renderPrepare()
 			}
 		}
 
+	}
+	else if(type == "direction")
+	{
+		vector<uint64_t> vals;
+		for(int i = 0; i < storage->width * storage->height; ++i)
+			vals.push_back(data[i].hits);
+		sort(vals.begin(), vals.end());
+		for(int x = 0; x < storage->width; ++x)
+		{
+			for(int y = 0; y < storage->height; ++y)
+			{
+				int index = x + y * storage->width;
+				auto d = data[index];
+				uint64_t h = d.hits;
+				int i = distance(vals.begin(), lower_bound(vals.begin(), vals.end(), h));
+				double rel = i / (double)vals.size();
+				rel = pow(rel, 10);
+
+				complex<double> c(x*storage->complexWidth/storage->width-storage->complexWidth/2, y*storage->complexHeight/storage->height-storage->complexHeight/2);
+				complex<double> orig(d.realOrig / h, d.imagOrig / h);
+				complex<double> last(d.realLast / h, d.imagLast / h);
+
+				complex<double> dir = c - orig;
+
+				
+				pixels[index] = createHSLColor((arg(dir)+PI)/(2*PI), 1, rel);
+			}
+		}
 	}
 	else
 	{ //FALLBACK: hits

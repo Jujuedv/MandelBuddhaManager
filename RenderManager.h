@@ -4,6 +4,7 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
+#include <tuple>
 
 #include <SDL2/SDL.h>
 
