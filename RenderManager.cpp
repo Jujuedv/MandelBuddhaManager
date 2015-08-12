@@ -1,4 +1,5 @@
 #include "RenderManager.h"
+#include <png.h>
 
 const double PI = acos(-1);
 
@@ -74,6 +75,57 @@ void ViewWindow::create()
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, storage->width, storage->height);
 
 	renderPrepare();
+	SDL_UpdateTexture(texture, 0, pixels, storage->width * sizeof(Uint32));
+}
+
+void ViewWindow::createToFile(string filename)
+{
+	pixels = new Uint32[storage->width * storage->height];
+	renderPrepare();
+
+	auto fp = fopen(filename.c_str(), "wb");
+	auto png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
+	auto info_ptr = png_create_info_struct(png_ptr);
+	if(setjmp(png_jmpbuf(png_ptr)))
+	{
+		fprintf(stderr, "Error on save... aborting...\n");
+		png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+		png_destroy_write_struct(&png_ptr, (png_infopp)0);
+		fclose(fp);
+		return;
+	}
+	png_init_io(png_ptr, fp);
+	png_set_IHDR(png_ptr, info_ptr, storage->width, storage->height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+
+
+	char buffer[512];
+	sprintf(buffer, "%s | %dx%d | s: %d | d: %d | cw: %lf | ch: %lf", storage->formula.c_str(), storage->width, storage->height, storage->steps, storage->divergenceThreshold, storage->complexWidth, storage->complexHeight);
+
+	png_text title_text;
+	title_text.compression = PNG_TEXT_COMPRESSION_NONE;
+	title_text.key = (png_charp)"Title";
+	title_text.text = buffer;
+	png_set_text(png_ptr, info_ptr, &title_text, 1);
+
+	png_write_info(png_ptr, info_ptr);
+	auto row = (png_bytep) malloc(3 * storage->width * sizeof(png_byte));
+	for(int y = 0; y < storage->height; ++y)
+	{
+		for(int x = 0; x < storage->width; ++x)
+		{
+			row[x*3] = (pixels[x+y*storage->width] >> 16) & 0xFF;
+			row[x*3+1] = (pixels[x+y*storage->width] >> 8) & 0xFF;
+			row[x*3+2] = (pixels[x+y*storage->width] >> 0) & 0xFF;
+		}	
+		png_write_row(png_ptr, row);
+	}
+	png_write_end(png_ptr, 0);
+	
+	png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+	png_destroy_write_struct(&png_ptr, (png_infopp)0);
+	fclose(fp);
+	free(row);
+	printf("saved with mode '%s' as '%s'.\n", type.c_str(), filename.c_str());
 }
 
 void ViewWindow::renderPrepare()
@@ -163,15 +215,17 @@ void ViewWindow::renderPrepare()
 		}
 	}
 
-	SDL_UpdateTexture(texture, 0, pixels, storage->width * sizeof(Uint32));
-
 	lastRendered = storage->computedSteps;
 }
 
 void ViewWindow::render()
 {
 	if(lastRendered != storage->computedSteps)
+	{
 		renderPrepare();
+		SDL_UpdateTexture(texture, 0, pixels, storage->width * sizeof(Uint32));
+	}
+
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, 0, 0);
 	SDL_RenderPresent(renderer);

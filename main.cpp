@@ -256,6 +256,22 @@ int main(int argc, char** argv)
 			}
 			renderMan.addWindow(new ViewWindow(active, renderType));
 		}
+		else if(ISCMD(line, "save"))
+		{
+			char renderType[512] = "hits", filename[512] = "out.png";
+			sscanf(line.c_str(), "save %s %[^\n]", renderType, filename);
+			
+			if(!active)
+			{
+				fprintf(stderr, "no active data set... aborting\nSelect one using 'select' or create one using 'calc'\n");
+				continue;
+			}
+			auto vw = new ViewWindow(active, renderType);
+			vw->createToFile(filename);
+			delete vw;
+		}
+
+		fflush(stdout);
 	}
 
 	gl = del_GetLine(gl);

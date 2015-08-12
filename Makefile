@@ -4,7 +4,7 @@ BIN=mbmanager
 OBJ=$(SRC:%cpp=%o)
 CXX=/usr/bin/clang++
 CXXFLAGS=-std=c++14 -g -march=native -O3
-LDFLAGS=-lSDL2 -lpthread -ltecla
+LDFLAGS=-lSDL2 -lpthread -ltecla -lpng
 
 all: .depend mbmanager
 

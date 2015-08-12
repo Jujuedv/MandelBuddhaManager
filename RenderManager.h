@@ -27,6 +27,7 @@ struct ViewWindow
 	~ViewWindow();
 
 	void create();
+	void createToFile(string filename);
 	void renderPrepare();
 	void render();
 };
