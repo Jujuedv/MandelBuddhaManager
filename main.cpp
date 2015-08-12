@@ -41,7 +41,7 @@ CPL_MATCH_FN(autocomp)
 	string cmd = l.substr(0, l.find_first_of(" \n\t"));
 	if(l == cmd)
 	{
-		static vector<string> cmds = {"calc", "select", "stop", "view"};
+		static vector<string> cmds = {"calc", "save", "select", "stop", "view"};
 		for(auto c : cmds)
 		{
 			if(c.substr(0, cmd.size()) == cmd)
