@@ -191,6 +191,34 @@ void ViewWindow::renderPrepare()
 			}
 		}
 	}
+	else if(type == "fractal")
+	{
+		vector<double> steps;
+		for(int i = 0; i < storage->width * storage->height; ++i)
+		{
+			if(data[i].startHits)
+				steps.push_back(data[i].startSteps/data[i].startHits);
+		}
+		printf("%zu\n", steps.size());
+		for(int x = 0; x < storage->width; ++x)
+		{
+			for(int y = 0; y < storage->height; ++y)
+			{
+				int index = x + y * storage->width;
+				auto d = data[index];
+				if(!d.startHits)
+				{
+					pixels[index] = 0xFF000000;
+					continue;
+				}
+
+				int i = distance(steps.begin(), lower_bound(steps.begin(), steps.end(), d.startSteps / d.startHits));
+
+				pixels[index] = createHSLColor(i / (double)steps.size(), 1, 1);
+			}
+		}
+	}
+
 	else
 	{ //FALLBACK: hits
 		uint64_t total = 0;
