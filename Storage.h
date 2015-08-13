@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <complex>
+#include <functional>
 
 using namespace std;
 
@@ -21,8 +22,9 @@ struct PixelData
 
 struct ThreadData
 {
-	vector<complex<double>> cache;
-	vector<PixelData> data;
+	vector<tuple<complex<double>, complex<double>, int>> cache;
+	int next;
+	function<void(void)> saveCallBack;
 };
 
 struct StorageElement

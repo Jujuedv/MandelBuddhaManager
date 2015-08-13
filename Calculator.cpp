@@ -104,12 +104,61 @@ void Calculator::startCalculation()
 	stripe = 0;
 
 	threadData.resize(THREADCOUNT);
+	mergeDat.resize(storageElem->width * storageElem->height);
 	calculating = THREADCOUNT;
 	waiting = merging = 0;
 	for(int i = 0; i < THREADCOUNT; ++i)
 	{
-		threadData[i].data.resize(storageElem->width * storageElem->height);
-		threadData[i].cache.resize(storageElem->steps);
+		threadData[i].next = 0;
+		threadData[i].cache.resize(storageElem->steps * 128);
+		threadData[i].saveCallBack = [this, i](){
+			merge.lock();
+			int next = 0;
+			double halfCompWidth = storageElem->complexWidth / 2;
+			double halfCompHeight = storageElem->complexHeight / 2;
+			double compScaleHori = storageElem->width / storageElem->complexWidth;
+			double compScaleVert = storageElem->height / storageElem->complexHeight;
+			while(next < threadData[i].next)
+			{
+				int kDiv = 0;
+				while(kDiv + next < threadData[i].next && get<2>(threadData[i].cache[kDiv + next]) == kDiv)
+					++kDiv;
+				complex<double> c = get<1>(threadData[i].cache[next]);	
+				int cx = (c.real() + halfCompWidth) * compScaleHori;
+				int cy = (c.imag() + halfCompHeight) * compScaleVert;
+				auto &cdat = mergeDat[cx + storageElem->width * cy];
+				cdat.startHits ++;
+				cdat.startSteps += kDiv;
+				for(int j = storageElem->skipPoints; j < kDiv; ++j)
+				{
+					complex<double> x;
+					int n;
+					tie(x,ignore,n) = threadData[i].cache[next+j];
+					int xx = (x.real() + halfCompWidth) * compScaleHori;
+					int xy = (x.imag() + halfCompHeight) * compScaleVert;
+
+					if(xx >= 0 && xy >= 0 && xx < storageElem->width && xy < storageElem->height)
+					{
+						auto &xdat = mergeDat[xx + storageElem->width * xy];
+						xdat.hits++;
+						xdat.realOrig += c.real();
+						xdat.imagOrig += c.imag();
+						xdat.steps += kDiv;
+						xdat.reachedStep += j;
+						if(j)
+						{
+							auto xlast = get<1>(threadData[i].cache[next+j-1]);
+							xdat.realLast += xlast.real();
+							xdat.imagLast += xlast.imag();
+						}
+					}
+				}
+				next += kDiv;
+			}
+			threadData[i].next = 0;
+
+			merge.unlock();
+		};
 		threads.emplace_back(&Calculator::worker, this, i);
 	}
 }
@@ -155,6 +204,8 @@ void Calculator::worker(int threadNum)
 			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &stop);
 		}
 
+		threadData[threadNum].saveCallBack();
+
 		sync.lock();
 		calculating--;
 		while(merging)
@@ -188,29 +239,6 @@ void Calculator::worker(int threadNum)
 		stripe = 0;
 		sync.unlock();
 
-		merge.lock();
-		for(int i = 0; i < storageElem->width; ++i)
-		{
-			for(int j = 0; j < storageElem->height; ++j)
-			{
-				int index=i+j*storageElem->width;
-
-				auto &d = storageElem->data[index];
-				auto &td = threadData[threadNum].data[index];
-
-				d.hits += td.hits; td.hits = 0;
-				d.realOrig += td.realOrig; td.realOrig = 0;
-				d.imagOrig += td.imagOrig; td.imagOrig = 0;
-				d.realLast += td.realLast; td.realLast = 0;
-				d.imagLast += td.imagLast; td.imagLast = 0;
-				d.steps += td.steps; td.steps = 0;
-				d.reachedStep += td.reachedStep; td.reachedStep = 0;
-				d.startHits += td.startHits; td.startHits = 0;
-				d.startSteps += td.startSteps; td.startSteps = 0;
-			}
-		}
-
-		merge.unlock();
 
 		sync.lock();
 		while(waiting)
@@ -223,6 +251,30 @@ void Calculator::worker(int threadNum)
 		calculating++;
 		if(!merging)
 		{
+			merge.lock();
+			for(int i = 0; i < storageElem->width; ++i)
+			{
+				for(int j = 0; j < storageElem->height; ++j)
+				{
+					int index=i+j*storageElem->width;
+
+					auto &d = storageElem->data[index];
+					auto &td = mergeDat[index];
+
+					d.hits += td.hits; td.hits = 0;
+					d.realOrig += td.realOrig; td.realOrig = 0;
+					d.imagOrig += td.imagOrig; td.imagOrig = 0;
+					d.realLast += td.realLast; td.realLast = 0;
+					d.imagLast += td.imagLast; td.imagLast = 0;
+					d.steps += td.steps; td.steps = 0;
+					d.reachedStep += td.reachedStep; td.reachedStep = 0;
+					d.startHits += td.startHits; td.startHits = 0;
+					d.startSteps += td.startSteps; td.startSteps = 0;
+				}
+			}
+
+			merge.unlock();
+
 			printf("Saving Step %d... ", ++storageElem->computedSteps);
 			storageElem->headerSaved = false;
 			storageElem->saved = false;
