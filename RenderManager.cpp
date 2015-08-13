@@ -197,9 +197,8 @@ void ViewWindow::renderPrepare()
 		for(int i = 0; i < storage->width * storage->height; ++i)
 		{
 			if(data[i].startHits)
-				steps.push_back(data[i].startSteps/data[i].startHits);
+				steps.push_back(data[i].startSteps/(double)data[i].startHits);
 		}
-		printf("%zu\n", steps.size());
 		for(int x = 0; x < storage->width; ++x)
 		{
 			for(int y = 0; y < storage->height; ++y)
@@ -212,9 +211,9 @@ void ViewWindow::renderPrepare()
 					continue;
 				}
 
-				int i = distance(steps.begin(), lower_bound(steps.begin(), steps.end(), d.startSteps / d.startHits));
+				int i = distance(steps.begin(), lower_bound(steps.begin(), steps.end(), d.startSteps / (double)d.startHits));
 
-				pixels[index] = createHSLColor(i / (double)steps.size(), 1, 1);
+				pixels[index] = createHSLColor(clamp(i / (double)steps.size(), 0., 0.999999999), 1, 0.5);
 			}
 		}
 	}
