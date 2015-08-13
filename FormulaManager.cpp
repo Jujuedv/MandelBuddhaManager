@@ -26,40 +26,22 @@ void FormulaManager::init()
 		\
 		int startindex = INDEXCOMP(xc, yc); \
 		\
-		auto startData = data.data[startindex]; \
-		startData.startHits++; \
-		\
 		if (!settings.divergenceTable[startindex]) \
 			continue; \
 		\
 		int kDiv = 0; \
+		if(data.next + settings.steps >= data.cache.size()) \
+			data.saveCallBack();\
 		for (; kDiv < settings.steps; ++kDiv) \
 		{ \
 			f; \
-			data.cache[kDiv] = x; \
+			data.cache[kDiv+data.next] = make_tuple(x,c,kDiv); \
 			if (x.imag() * x.imag() + x.real() * x.real() > thres) \
 				break; \
 		} \
 		\
-		startData.startSteps += kDiv; \
-		\
 		if (kDiv != settings.steps) \
-		{ \
-			for (int k = settings.skipPoints; k < kDiv; ++k) \
-			{ \
-				x = data.cache[k]; \
-				auto fieldIndex = INDEXCOMP(x.real(), x.imag()); \
-				if(xi < 0 || xi >= settings.width || yi < 0 || yi >= settings.height)\
-					continue;\
-				auto &fieldData = data.data[fieldIndex]; \
-				\
-				fieldData.hits++; \
-				fieldData.realOrig += xc; \
-				fieldData.imagOrig += yc; \
-				fieldData.steps += kDiv; \
-				fieldData.reachedStep += k; \
-			} \
-		} \
+			data.next += kDiv;\
 	} \
 };\
 diverges[#f] = [](double x1, double x2, const StorageElement& settings){\

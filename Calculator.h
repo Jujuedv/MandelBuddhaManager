@@ -17,6 +17,7 @@ struct Calculator
 
 	vector<ThreadData> threadData;
 	vector<thread> threads;
+	vector<PixelData> mergeDat;
 	mutex sync, merge, calc;
 	volatile int calculating = 0, waiting = 0, merging = 0;
 	volatile bool stop = false;
