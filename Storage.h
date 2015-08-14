@@ -23,7 +23,7 @@ struct PixelData
 struct ThreadData
 {
 	vector<tuple<complex<double>, complex<double>, int>> cache;
-	int next;
+	volatile int next;
 	function<void(void)> saveCallBack;
 };
 

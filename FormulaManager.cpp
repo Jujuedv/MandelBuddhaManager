@@ -17,7 +17,7 @@ void FormulaManager::init()
 	double halfCompHeight = settings.complexHeight / 2; \
 	double compScaleHori = settings.width / settings.complexWidth; \
 	double compScaleVert = settings.height / settings.complexHeight; \
-	double thres = settings.divergenceThreshold * settings.divergenceThreshold;\
+	double thres = settings.divergenceThreshold * (double)settings.divergenceThreshold;\
 	int xi, yi;\
 	\
 	for (double yc = ystart; yc + ystep/2 < halfCompHeight && !*stop; yc += ystep) \

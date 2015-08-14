@@ -6,6 +6,8 @@ using namespace std;
 using namespace std::literals;
 
 constexpr int THREADCOUNT = 7;
+constexpr int MEMPERTHREAD = 128*1024*1024;
+constexpr int CACHEPERTHREAD = MEMPERTHREAD / sizeof(ThreadData::cache[0]);
 
 Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip, double cw, double ch, bool *ok, Storage *store)
 {
@@ -110,10 +112,10 @@ void Calculator::startCalculation()
 	for(int i = 0; i < THREADCOUNT; ++i)
 	{
 		threadData[i].next = 0;
-		threadData[i].cache.resize(storageElem->steps * 128);
+		threadData[i].cache.resize(CACHEPERTHREAD);
 		threadData[i].saveCallBack = [this, i](){
 			merge.lock();
-			int next = 0;
+			int next = 0; 
 			double halfCompWidth = storageElem->complexWidth / 2;
 			double halfCompHeight = storageElem->complexHeight / 2;
 			double compScaleHori = storageElem->width / storageElem->complexWidth;
