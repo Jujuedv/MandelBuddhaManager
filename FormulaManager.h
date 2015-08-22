@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _FORMULAMANAGER_H_
+#define _FORMULAMANAGER_H_
 
 #include <map>
 #include <string>
@@ -14,3 +15,5 @@ struct FormulaManager
 	static map<string, function<bool(double, double, const StorageElement&)>> diverges;
 	static void init();
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _CALCULATOR_H_
+#define _CALCULATOR_H_
 
 #include <atomic>
 #include <mutex>
@@ -30,3 +31,5 @@ struct Calculator
 	void stopCalculation();
 	void worker(int threadNum);
 };
+
+#endif

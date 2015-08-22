@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _RENDERMANAGER_H_
+#define _RENDERMANAGER_H_
 
 #include <set>
 #include <mutex>
@@ -44,3 +45,5 @@ struct RenderManager
 	void removeWindow(ViewWindow*);	
 	void renderThread();
 };
+
+#endif

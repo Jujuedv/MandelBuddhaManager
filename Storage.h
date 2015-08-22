@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _STORAGE_H_
+#define _STORAGE_H_
 
 #include <string>
 #include <vector>
@@ -59,3 +60,4 @@ struct Storage
 	void save();
 };
 
+#endif
