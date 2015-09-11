@@ -39,7 +39,7 @@ struct StorageElement
 
 	bool loaded = false, saved = true, headerSaved = true;
 
-	vector<char> divergenceTable;
+	vector<uint8_t> divergenceTable;
 	vector<PixelData> data;
 
 	void loadHeader();

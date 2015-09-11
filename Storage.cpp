@@ -1,32 +1,76 @@
 #include "Storage.h"
 #include <sys/stat.h>
+#include <SDL2/SDL_endian.h>
+
+template<typename T>
+void write(FILE *file, const T &t);
+
+template<>
+void write(FILE *file, const uint64_t &t)
+{
+	uint64_t val = SDL_SwapBE64(t);
+	fwrite(&val, sizeof(uint64_t), 1, file);
+}
+
+template<>
+void write(FILE *file, const uint8_t &t)
+{
+	fwrite(&t, sizeof(uint8_t), 1, file);
+}
+
+template<>
+void write(FILE *file, const double &t)
+{
+	write(file, *reinterpret_cast<const uint64_t *>(&t));
+}
+
+template<typename T>
+void read(FILE *file, T &t);
+
+template<>
+void read(FILE *file, uint64_t &t)
+{
+	uint64_t val; 
+	fread(&val, sizeof(uint64_t), 1, file);
+	t = SDL_SwapBE64(val);
+}
+
+template<>
+void read(FILE *file, uint8_t &t)
+{
+	fread(&t, sizeof(uint8_t), 1, file);
+}
+
+template<>
+void read(FILE *file, double &t)
+{
+	read(file, *reinterpret_cast<uint64_t *>(&t));
+}
 
 void PixelData::load(FILE *file)
 {
-	fscanf(file, "%lu %lf %lf %lf %lf %lu %lu %lu %lu\n", 
-		&hits,
-		&realOrig, 
-		&imagOrig,
-		&realLast, 
-		&imagLast, 
-		&steps, 
-		&reachedStep, 
-		&startHits,
-		&startSteps);
+	read(file, hits);
+	read(file, realOrig);
+	read(file, imagOrig);
+	read(file, realLast);
+	read(file, imagLast);
+	read(file, steps);
+	read(file, reachedStep);
+	read(file, startHits);
+	read(file, startSteps);
 }
 
 void PixelData::save(FILE *file)
 {
-	fprintf(file, "%lu %lf %lf %lf %lf %lu %lu %lu %lu\n",
-		hits,
-		realOrig,
-		imagOrig,
-		realLast,
-		imagLast,
-		steps,
-		reachedStep,
-		startHits,
-		startSteps);
+	write(file, hits);
+	write(file, realOrig);
+	write(file, imagOrig);
+	write(file, realLast);
+	write(file, imagLast);
+	write(file, steps);
+	write(file, reachedStep);
+	write(file, startHits);
+	write(file, startSteps);
 }
 
 void StorageElement::loadHeader()
@@ -53,13 +97,13 @@ void StorageElement::load()
 	char filename[128];
 	sprintf(filename, "storage/storage_%d.data", uid);
 
-	auto file = fopen(filename, "r");
+	auto file = fopen(filename, "rb");
 
 	divergenceTable.resize(width * height);
 	data.resize(width * height);
 
 	for (int i = 0; i < width * height; ++i)
-		fscanf(file, "%hhd\n", &(divergenceTable[i]));
+		read(file, divergenceTable[i]);
 	for (int i = 0; i < width * height; ++i)
 		data[i].load(file);
 
@@ -94,11 +138,10 @@ void StorageElement::save()
 	char filename[128];
 	sprintf(filename, "storage/storage_%d.data", uid);
 
-	auto file = fopen(filename, "w");
+	auto file = fopen(filename, "wb");
 
 	for (int i = 0; i < width * height; ++i)
-		fprintf(file, "%d ", divergenceTable[i]);
-	fprintf(file, "\n");
+		write(file, divergenceTable[i]);
 	for (int i = 0; i < width * height; ++i)
 		data[i].save(file);
 
