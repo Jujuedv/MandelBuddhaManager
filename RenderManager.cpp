@@ -130,6 +130,7 @@ void ViewWindow::createToFile(string filename)
 
 void ViewWindow::renderPrepare()
 {
+	storage->aquireData();
 	vector<PixelData> data = storage->data;
 	memset(pixels, 0, sizeof(Uint32) * storage->width * storage->height);
 
@@ -242,6 +243,7 @@ void ViewWindow::renderPrepare()
 		}
 	}
 
+	storage->releaseData();
 	lastRendered = storage->computedSteps;
 }
 

@@ -41,9 +41,6 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip
 			continue;
 
 		this->storageElem = s;
-
-		if (!s->loaded)
-			s->load();
 		return;
 	}
 
@@ -61,12 +58,9 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip
 	s->computedSteps = 0;
 	s->complexWidth = cw;
 	s->complexHeight = ch;
-	s->loaded = true;
-	s->saved = false;
 	s->headerSaved = false;
 
-	s->divergenceTable.resize(w*h);
-	s->data.resize(w*h);
+	store->save();
 
 	createDivergencyTable(*s);
 
@@ -75,6 +69,7 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip
 
 void Calculator::createDivergencyTable(StorageElement &s)
 {
+	s.aquireDivergenceTable();
 	printf("generating divergency table... ");
 	fflush(stdout);
 	auto diver = FormulaManager::diverges[s.formula];
@@ -90,6 +85,8 @@ void Calculator::createDivergencyTable(StorageElement &s)
 					s.divergenceTable[(x+dx)+(y+dy)*s.width] |= val;
 		}
 	}
+	s.divDirty = true;
+	s.releaseDivergenceTable();
 	
 	printf("done\n");
 }
@@ -176,6 +173,8 @@ void Calculator::stopCalculation()
 
 void Calculator::worker(int threadNum)
 {
+	storageElem->aquireData();
+	storageElem->aquireDivergenceTable();
 	auto form = FormulaManager::formulas[storageElem->formula];
 	while(!stop)
 	{
@@ -201,7 +200,13 @@ void Calculator::worker(int threadNum)
 				break;
 
 			if(stop)
+			{
+				sync.lock();
+				storageElem->releaseDivergenceTable();
+				storageElem->releaseData();
+				sync.unlock();
 				return;
+			}
 
 			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &stop);
 		}
@@ -227,6 +232,8 @@ void Calculator::worker(int threadNum)
 			if(stop && calculating)
 			{
 				calculating++;
+				storageElem->releaseDivergenceTable();
+				storageElem->releaseData();
 				sync.unlock();
 				return;
 			}
@@ -279,11 +286,15 @@ void Calculator::worker(int threadNum)
 
 			printf("Saving Step %d... ", ++storageElem->computedSteps);
 			storageElem->headerSaved = false;
-			storageElem->saved = false;
+			storageElem->dataDirty = true;
 			store->save();
 			printf("done\n");
 			fflush(stdout);
 		}
 		sync.unlock();
 	}
+	sync.lock();
+	storageElem->releaseDivergenceTable();
+	storageElem->releaseData();
+	sync.unlock();
 }

@@ -92,26 +92,45 @@ void StorageElement::loadHeader()
 	fclose(file);
 }
 
-void StorageElement::load()
+void StorageElement::loadDivergenceTable()
+{
+	char filename[128];
+	sprintf(filename, "storage/storage_%d.div", uid);
+
+	auto file = fopen(filename, "rb");
+
+	divergenceTable.resize(width * height, true);
+
+	if(!file)
+		return;
+
+	for (int i = 0; i < width * height; ++i)
+		read(file, divergenceTable[i]);
+
+	fclose(file);
+
+	divDirty = false;
+}
+
+void StorageElement::loadData()
 {
 	char filename[128];
 	sprintf(filename, "storage/storage_%d.data", uid);
 
 	auto file = fopen(filename, "rb");
 
-	divergenceTable.resize(width * height);
 	data.resize(width * height);
 
-	for (int i = 0; i < width * height; ++i)
-		read(file, divergenceTable[i]);
+	if(!file)
+		return;
+
 	for (int i = 0; i < width * height; ++i)
 		data[i].load(file);
 
 	fclose(file);
 
-	loaded = true;
+	dataDirty = false;
 }
-
 
 
 void StorageElement::saveHeader()
@@ -133,7 +152,22 @@ void StorageElement::saveHeader()
 	headerSaved = true;
 }
 
-void StorageElement::save()
+void StorageElement::saveDivergenceTable()
+{
+	char filename[128];
+	sprintf(filename, "storage/storage_%d.div", uid);
+
+	auto file = fopen(filename, "wb");
+
+	for (int i = 0; i < width * height; ++i)
+		write(file, divergenceTable[i]);
+
+	fclose(file);
+
+	divDirty = false;
+}
+
+void StorageElement::saveData()
 {
 	char filename[128];
 	sprintf(filename, "storage/storage_%d.data", uid);
@@ -141,13 +175,51 @@ void StorageElement::save()
 	auto file = fopen(filename, "wb");
 
 	for (int i = 0; i < width * height; ++i)
-		write(file, divergenceTable[i]);
-	for (int i = 0; i < width * height; ++i)
 		data[i].save(file);
 
 	fclose(file);
 
-	saved = true;
+	dataDirty = false;
+}
+
+void StorageElement::aquireDivergenceTable()
+{
+	mtx.lock();
+	if(!divUsage)
+		loadDivergenceTable();
+	++divUsage;
+	mtx.unlock();
+}
+
+void StorageElement::aquireData()
+{
+	mtx.lock();
+	if(!dataUsage)
+		loadData();
+	++dataUsage;
+	mtx.unlock();
+}
+
+void StorageElement::releaseDivergenceTable()
+{
+	mtx.lock();
+	--divUsage;
+	if(divDirty)
+		saveDivergenceTable();
+	if(!divUsage)
+		vector<uint8_t>().swap(divergenceTable);
+	mtx.unlock();
+}
+
+void StorageElement::releaseData()
+{
+	mtx.lock();
+	--dataUsage;
+	if(dataDirty)
+		saveData();
+	if(!dataUsage)
+		vector<PixelData>().swap(data);
+	mtx.unlock();
 }
 
 Storage::~Storage()
@@ -193,8 +265,10 @@ void Storage::save()
 		fprintf(file, "%d\n", s->uid);
 		if (!s->headerSaved)
 			s->saveHeader();
-		if (!s->saved)
-			s->save();
+		if (s->divDirty)
+			s->saveDivergenceTable();
+		if (s->dataDirty)
+			s->saveData();
 	}
 	fclose(file);
 }

@@ -220,9 +220,6 @@ int main(int argc, char** argv)
 					continue;
 
 				active = s;
-
-				if (!s->loaded)
-					s->load();
 				found = true;
 				break;
 			}

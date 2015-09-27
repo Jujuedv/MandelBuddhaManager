@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <complex>
 #include <functional>
+#include <mutex>
 
 using namespace std;
 
@@ -37,15 +38,30 @@ struct StorageElement
 	int steps, computedSteps, skipPoints;
 	double complexWidth, complexHeight;
 
-	bool loaded = false, saved = true, headerSaved = true;
+	bool headerSaved = true;
 
 	vector<uint8_t> divergenceTable;
+	int divUsage = 0;
+	bool divDirty = false;
 	vector<PixelData> data;
+	int dataUsage = 0;
+	bool dataDirty = false;
+
+	mutex mtx;
 
 	void loadHeader();
-	void load();
+	void loadDivergenceTable();
+	void loadData();
+
 	void saveHeader();
-	void save();
+	void saveDivergenceTable();
+	void saveData();
+
+	void aquireDivergenceTable();
+	void aquireData();
+
+	void releaseDivergenceTable();
+	void releaseData();
 };
 
 struct Storage
