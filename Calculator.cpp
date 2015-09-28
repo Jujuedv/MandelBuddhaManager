@@ -104,6 +104,9 @@ void Calculator::startCalculation()
 
 	threadData.resize(THREADCOUNT);
 	mergeDat.resize(storageElem->width * storageElem->height);
+
+	//TODO load paused data
+
 	calculating = THREADCOUNT;
 	waiting = merging = 0;
 	for(int i = 0; i < THREADCOUNT; ++i)
@@ -165,10 +168,23 @@ void Calculator::startCalculation()
 void Calculator::stopCalculation()
 {
 	stop = true;
+	abort = true;
 	for(auto &t : threads)
 		t.join();
 	threads.clear();
 	threadData.clear();
+}
+
+void Calculator::pauseCalculation()
+{
+	stop = true;
+	abort = false;
+	for(auto &t : threads)
+		t.join();
+	threads.clear();
+	threadData.clear();
+
+	//TODO save to fs
 }
 
 void Calculator::worker(int threadNum)
@@ -184,6 +200,26 @@ void Calculator::worker(int threadNum)
 			double myX = x + xstep * stripe;
 			double myY = y;
 			double myYstep = stripe % 2 ? ystep * 2 : ystep;
+
+			if(myX + xstep/2 > storageElem->complexWidth/2)
+			{
+				calc.unlock();
+				break;
+			}
+
+			if(stop)
+			{
+				calc.unlock();
+
+				if(!abort)
+					threadData[threadNum].saveCallBack();
+
+				sync.lock();
+				storageElem->releaseDivergenceTable();
+				storageElem->releaseData();
+				sync.unlock();
+				return;
+			}
 			
 			stripe++;
 			if(sync.try_lock())
@@ -195,19 +231,7 @@ void Calculator::worker(int threadNum)
 
 			calc.unlock();
 
-			if(myX + xstep/2 > storageElem->complexWidth/2)
-				break;
-
-			if(stop)
-			{
-				sync.lock();
-				storageElem->releaseDivergenceTable();
-				storageElem->releaseData();
-				sync.unlock();
-				return;
-			}
-
-			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &stop);
+			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &abort);
 		}
 
 		threadData[threadNum].saveCallBack();
@@ -287,6 +311,7 @@ void Calculator::worker(int threadNum)
 			storageElem->headerSaved = false;
 			storageElem->dataDirty = true;
 			store->save();
+			//TODO delete pause data
 			printf("done\n");
 			fflush(stdout);
 		}

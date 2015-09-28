@@ -20,7 +20,7 @@ struct Calculator
 	vector<PixelData> mergeDat;
 	mutex sync, merge, calc;
 	volatile int calculating = 0, waiting = 0, merging = 0;
-	volatile bool stop = false;
+	volatile bool stop = false, abort = false;
 	volatile double x, y, xstep, ystep;
 	volatile int stripe;
 
@@ -28,5 +28,6 @@ struct Calculator
 	void createDivergencyTable(StorageElement &s);
 	void startCalculation();
 	void stopCalculation();
+	void pauseCalculation();
 	void worker(int threadNum);
 };

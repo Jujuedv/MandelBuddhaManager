@@ -41,7 +41,7 @@ CPL_MATCH_FN(autocomp)
 	string cmd = l.substr(0, l.find_first_of(" \n\t"));
 	if(l == cmd)
 	{
-		static vector<string> cmds = {"calc", "save", "select", "stop", "view"};
+		static vector<string> cmds = {"calc", "pause", "save", "select", "stop", "view"};
 		for(auto c : cmds)
 		{
 			if(c.substr(0, cmd.size()) == cmd)
@@ -239,6 +239,19 @@ int main(int argc, char** argv)
 				delete calc;
 				calc = 0;
 				printf("stopping... done.\n");
+			}
+		}
+		else if(ISCMD(line, "pause"))
+		{
+			if(!calc)
+				fprintf(stderr, "no calculation running.. pausing nothing..\n");
+			else
+			{
+				printf("pausing... \n");
+				calc->pauseCalculation();
+				delete calc;
+				calc = 0;
+				printf("pausing... done.\n");
 			}
 		}
 		else if(ISCMD(line, "view"))
