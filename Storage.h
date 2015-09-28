@@ -52,16 +52,20 @@ struct StorageElement
 	void loadHeader();
 	void loadDivergenceTable();
 	void loadData();
+	void loadPauseData(vector<PixelData> &dat, uint64_t &stripe);
 
 	void saveHeader();
 	void saveDivergenceTable();
 	void saveData();
+	void savePauseData(vector<PixelData> &dat, uint64_t stripe);
 
 	void aquireDivergenceTable();
 	void aquireData();
 
 	void releaseDivergenceTable();
 	void releaseData();
+
+	void deletePauseData();
 };
 
 struct Storage

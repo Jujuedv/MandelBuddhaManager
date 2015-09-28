@@ -105,7 +105,9 @@ void Calculator::startCalculation()
 	threadData.resize(THREADCOUNT);
 	mergeDat.resize(storageElem->width * storageElem->height);
 
-	//TODO load paused data
+	uint64_t stripeLoad = 0;
+	storageElem->loadPauseData(mergeDat, stripeLoad);
+	stripe = stripeLoad;
 
 	calculating = THREADCOUNT;
 	waiting = merging = 0;
@@ -184,7 +186,7 @@ void Calculator::pauseCalculation()
 	threads.clear();
 	threadData.clear();
 
-	//TODO save to fs
+	storageElem->savePauseData(mergeDat, stripe);
 }
 
 void Calculator::worker(int threadNum)
@@ -310,8 +312,8 @@ void Calculator::worker(int threadNum)
 			printf("Saving Step %d... ", ++storageElem->computedSteps);
 			storageElem->headerSaved = false;
 			storageElem->dataDirty = true;
+			storageElem->deletePauseData();
 			store->save();
-			//TODO delete pause data
 			printf("done\n");
 			fflush(stdout);
 		}

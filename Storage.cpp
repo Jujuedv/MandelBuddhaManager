@@ -132,6 +132,23 @@ void StorageElement::loadData()
 	dataDirty = false;
 }
 
+void StorageElement::loadPauseData(vector<PixelData> &dat, uint64_t &stripe)
+{
+	char filename[128];
+	sprintf(filename, "storage/storage_%d.pause", uid);
+
+	auto file = fopen(filename, "rb");
+
+	if(!file)
+		return;
+
+	read(file, stripe);
+
+	for (int i = 0; i < width * height; ++i)
+		dat[i].load(file);
+
+	fclose(file);
+}
 
 void StorageElement::saveHeader()
 {
@@ -182,6 +199,21 @@ void StorageElement::saveData()
 	dataDirty = false;
 }
 
+void StorageElement::savePauseData(vector<PixelData> &dat, uint64_t stripe)
+{
+	char filename[128];
+	sprintf(filename, "storage/storage_%d.pause", uid);
+
+	auto file = fopen(filename, "wb");
+
+	write(file, stripe);
+
+	for (int i = 0; i < width * height; ++i)
+		dat[i].save(file);
+
+	fclose(file);
+}
+
 void StorageElement::aquireDivergenceTable()
 {
 	mtx.lock();
@@ -220,6 +252,13 @@ void StorageElement::releaseData()
 	if(!dataUsage)
 		vector<PixelData>().swap(data);
 	mtx.unlock();
+}
+
+void StorageElement::deletePauseData()
+{
+	char filename[128];
+	sprintf(filename, "storage/storage_%d.pause", uid);
+	remove(filename);
 }
 
 Storage::~Storage()
