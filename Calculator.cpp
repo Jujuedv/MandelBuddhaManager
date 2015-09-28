@@ -224,7 +224,7 @@ void Calculator::worker(int threadNum)
 			stripe++;
 			if(sync.try_lock())
 			{
-				printf("\033]0;%d/%d stripes\007", stripe, (2 << storageElem->computedSteps)-1);
+				printf("\033]0;%lu/%lu stripes\007", stripe, (2UL << storageElem->computedSteps)-1);
 				fflush(stdout);
 				sync.unlock();
 			}
