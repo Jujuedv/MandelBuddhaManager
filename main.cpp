@@ -41,7 +41,7 @@ CPL_MATCH_FN(autocomp)
 	string cmd = l.substr(0, l.find_first_of(" \n\t"));
 	if(l == cmd)
 	{
-		static vector<string> cmds = {"calc", "pause", "save", "select", "stop", "view"};
+		static vector<string> cmds = {"calc", "list", "pause", "save", "select", "stop", "view"};
 		for(auto c : cmds)
 		{
 			if(c.substr(0, cmd.size()) == cmd)
@@ -279,6 +279,23 @@ int main(int argc, char** argv)
 			auto vw = new ViewWindow(active, renderType);
 			vw->createToFile(filename);
 			delete vw;
+		}
+		else if(ISCMD(line, "list"))
+		{
+			for (auto s : store.saves)
+			{
+				printf("%s %dx%d %d %d %d %lf %lf -> %d\n",
+						s->formula.c_str(),
+						s->width,
+						s->height,
+						s->steps,
+						s->divergenceThreshold,
+						s->skipPoints,
+						s->complexWidth,
+						s->complexHeight,
+						s->computedSteps);
+			}
+
 		}
 
 		fflush(stdout);
