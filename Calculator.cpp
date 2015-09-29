@@ -138,8 +138,8 @@ void Calculator::startCalculation()
 					complex<double> x;
 					int n;
 					tie(x,ignore,n) = threadData[i].cache[next+j];
-					int xx = (x.real() + halfCompWidth) * compScaleHori;
-					int xy = (x.imag() + halfCompHeight) * compScaleVert;
+					int xx = floor((x.real() + halfCompWidth) * compScaleHori);
+					int xy = floor((x.imag() + halfCompHeight) * compScaleVert);
 
 					if(xx >= 0 && xy >= 0 && xx < storageElem->width && xy < storageElem->height)
 					{
