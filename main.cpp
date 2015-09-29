@@ -2,6 +2,8 @@
 #include <functional>
 #include <algorithm>
 
+#include <sys/stat.h>
+
 #include <SDL2/SDL.h>
 
 #include <libtecla.h>
@@ -41,7 +43,7 @@ CPL_MATCH_FN(autocomp)
 	string cmd = l.substr(0, l.find_first_of(" \n\t"));
 	if(l == cmd)
 	{
-		static vector<string> cmds = {"calc", "list", "pause", "save", "select", "stop", "view"};
+		static vector<string> cmds = {"calc", "list", "pause", "renderall", "save", "select", "stop", "view"};
 		for(auto c : cmds)
 		{
 			if(c.substr(0, cmd.size()) == cmd)
@@ -296,6 +298,51 @@ int main(int argc, char** argv)
 						s->computedSteps);
 			}
 
+		}
+		else if(ISCMD(line, "renderall"))
+		{
+			if(calc)
+			{
+				fprintf(stderr, "you can not render all while having a calculation run\n");
+				continue;
+			}
+
+
+			char folder[512] = "render", renderType[512] = "all";
+			sscanf(line.c_str(), "renderall %s %[^\n]", folder, renderType);
+			
+			mkdir(folder, 0777);
+			
+			int counter = 0;
+
+			vector<string> types = {"hits", "fractal", "origin", "direction"};
+			if(renderType != "all"s)
+				types = {renderType};
+
+			for(auto s : store.saves)
+			{
+				printf("%s %dx%d %d %d %d %lf %lf -> %d ... \n",
+						s->formula.c_str(),
+						s->width,
+						s->height,
+						s->steps,
+						s->divergenceThreshold,
+						s->skipPoints,
+						s->complexWidth,
+						s->complexHeight,
+						s->computedSteps);
+
+				
+				for(auto t : types)
+				{
+					ViewWindow(s, t).createToFile(folder + "/"s + to_string(counter) + ".png"s);
+					counter++;
+
+					printf("\033]0;%d/%lu images created...\007", counter, store.saves.size() * types.size());
+				}
+
+			}
+			printf("all done!\n");
 		}
 
 		fflush(stdout);
