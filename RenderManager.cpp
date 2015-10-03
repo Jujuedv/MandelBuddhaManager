@@ -224,6 +224,7 @@ void ViewWindow::renderPrepare()
 			if(data[i].startHits)
 				steps.push_back(data[i].startSteps/(double)data[i].startHits);
 		}
+		sort(steps.begin(), steps.end());
 		for(int x = 0; x < storage->width; ++x)
 		{
 			for(int y = 0; y < storage->height; ++y)
