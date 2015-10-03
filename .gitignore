@@ -2,4 +2,4 @@
 mbmanager
 *.o
 storage/
-
+render/
