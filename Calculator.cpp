@@ -41,9 +41,6 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip
 			continue;
 
 		this->storageElem = s;
-
-		if (!s->loaded)
-			s->load();
 		return;
 	}
 
@@ -61,12 +58,9 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip
 	s->computedSteps = 0;
 	s->complexWidth = cw;
 	s->complexHeight = ch;
-	s->loaded = true;
-	s->saved = false;
 	s->headerSaved = false;
 
-	s->divergenceTable.resize(w*h);
-	s->data.resize(w*h);
+	store->save();
 
 	createDivergencyTable(*s);
 
@@ -75,6 +69,7 @@ Calculator::Calculator(char *formula, int w, int h, int steps, int div, int skip
 
 void Calculator::createDivergencyTable(StorageElement &s)
 {
+	s.aquireDivergenceTable();
 	printf("generating divergency table... ");
 	fflush(stdout);
 	auto diver = FormulaManager::diverges[s.formula];
@@ -90,6 +85,8 @@ void Calculator::createDivergencyTable(StorageElement &s)
 					s.divergenceTable[(x+dx)+(y+dy)*s.width] |= val;
 		}
 	}
+	s.divDirty = true;
+	s.releaseDivergenceTable();
 	
 	printf("done\n");
 }
@@ -107,6 +104,11 @@ void Calculator::startCalculation()
 
 	threadData.resize(THREADCOUNT);
 	mergeDat.resize(storageElem->width * storageElem->height);
+
+	uint64_t stripeLoad = 0;
+	storageElem->loadPauseData(mergeDat, stripeLoad);
+	stripe = stripeLoad;
+
 	calculating = THREADCOUNT;
 	waiting = merging = 0;
 	for(int i = 0; i < THREADCOUNT; ++i)
@@ -136,8 +138,8 @@ void Calculator::startCalculation()
 					complex<double> x;
 					int n;
 					tie(x,ignore,n) = threadData[i].cache[next+j];
-					int xx = (x.real() + halfCompWidth) * compScaleHori;
-					int xy = (x.imag() + halfCompHeight) * compScaleVert;
+					int xx = floor((x.real() + halfCompWidth) * compScaleHori);
+					int xy = floor((x.imag() + halfCompHeight) * compScaleVert);
 
 					if(xx >= 0 && xy >= 0 && xx < storageElem->width && xy < storageElem->height)
 					{
@@ -168,14 +170,29 @@ void Calculator::startCalculation()
 void Calculator::stopCalculation()
 {
 	stop = true;
+	abort = true;
 	for(auto &t : threads)
 		t.join();
 	threads.clear();
 	threadData.clear();
 }
 
+void Calculator::pauseCalculation()
+{
+	stop = true;
+	abort = false;
+	for(auto &t : threads)
+		t.join();
+	threads.clear();
+	threadData.clear();
+
+	storageElem->savePauseData(mergeDat, stripe);
+}
+
 void Calculator::worker(int threadNum)
 {
+	storageElem->aquireData();
+	storageElem->aquireDivergenceTable();
 	auto form = FormulaManager::formulas[storageElem->formula];
 	while(!stop)
 	{
@@ -185,25 +202,38 @@ void Calculator::worker(int threadNum)
 			double myX = x + xstep * stripe;
 			double myY = y;
 			double myYstep = stripe % 2 ? ystep * 2 : ystep;
+
+			if(myX + xstep/2 > storageElem->complexWidth/2)
+			{
+				calc.unlock();
+				break;
+			}
+
+			if(stop)
+			{
+				calc.unlock();
+
+				if(!abort)
+					threadData[threadNum].saveCallBack();
+
+				sync.lock();
+				storageElem->releaseDivergenceTable();
+				storageElem->releaseData();
+				sync.unlock();
+				return;
+			}
 			
 			stripe++;
-			//if(stripe * 100 / (2 << storageElem->computedSteps) != (stripe-1) * 100 / (2 << storageElem->computedSteps))
 			if(sync.try_lock())
 			{
-				printf("\033]0;%d/%d stripes\007", stripe, (2 << storageElem->computedSteps)-1);
+				printf("\033]0;%lu/%lu stripes\007", stripe, (2UL << storageElem->computedSteps)-1);
 				fflush(stdout);
 				sync.unlock();
 			}
 
 			calc.unlock();
 
-			if(myX + xstep/2 > storageElem->complexWidth/2)
-				break;
-
-			if(stop)
-				return;
-
-			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &stop);
+			form(myX, myY, myYstep, threadData[threadNum], *storageElem, &abort);
 		}
 
 		threadData[threadNum].saveCallBack();
@@ -227,6 +257,8 @@ void Calculator::worker(int threadNum)
 			if(stop && calculating)
 			{
 				calculating++;
+				storageElem->releaseDivergenceTable();
+				storageElem->releaseData();
 				sync.unlock();
 				return;
 			}
@@ -279,11 +311,16 @@ void Calculator::worker(int threadNum)
 
 			printf("Saving Step %d... ", ++storageElem->computedSteps);
 			storageElem->headerSaved = false;
-			storageElem->saved = false;
+			storageElem->dataDirty = true;
+			storageElem->deletePauseData();
 			store->save();
 			printf("done\n");
 			fflush(stdout);
 		}
 		sync.unlock();
 	}
+	sync.lock();
+	storageElem->releaseDivergenceTable();
+	storageElem->releaseData();
+	sync.unlock();
 }

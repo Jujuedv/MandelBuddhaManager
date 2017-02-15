@@ -99,13 +99,37 @@ void ViewWindow::createToFile(string filename)
 
 
 	char buffer[512];
-	sprintf(buffer, "%s | %dx%d | s: %d | d: %d | cw: %lf | ch: %lf", storage->formula.c_str(), storage->width, storage->height, storage->steps, storage->divergenceThreshold, storage->complexWidth, storage->complexHeight);
 
-	png_text title_text;
-	title_text.compression = PNG_TEXT_COMPRESSION_NONE;
-	title_text.key = (png_charp)"Title";
-	title_text.text = buffer;
-	png_set_text(png_ptr, info_ptr, &title_text, 1);
+	png_text text;
+	text.compression = PNG_TEXT_COMPRESSION_NONE;
+	text.key = (png_charp)"Title";
+	sprintf(buffer, "%s (%s)", storage->formula.c_str(), type.c_str());
+	text.text = buffer;
+	png_set_text(png_ptr, info_ptr, &text, 1);
+
+	text.key = (png_charp)"Description";
+	sprintf(buffer, "Formula: %s\n"
+			"Resolution: %dx%d\n"
+			"Steps: %d\n"
+			"Skip: %d\n"
+			"Divergence Threshold: %d\n"
+			"Complex Plane: (%lf - %lf) x (%lf - %lf)\n"
+			"Rendertype: %s\n"
+			"Computed Steps: %d",
+			storage->formula.c_str(),
+			storage->width, storage->height,
+			storage->steps,
+			storage->skipPoints,
+			storage->divergenceThreshold,
+			storage->complexWidth / -2, storage->complexWidth / 2, storage->complexHeight / -2, storage->complexHeight / 2,
+			type.c_str(),
+			storage->computedSteps);
+	text.text = buffer;
+	png_set_text(png_ptr, info_ptr, &text, 1);
+
+	text.key = (png_charp)"Source";
+	text.text = (png_charp)"MandelBuddhaManager by Jujuedv";
+	png_set_text(png_ptr, info_ptr, &text, 1);
 
 	png_write_info(png_ptr, info_ptr);
 	auto row = (png_bytep) malloc(3 * storage->width * sizeof(png_byte));
@@ -130,6 +154,7 @@ void ViewWindow::createToFile(string filename)
 
 void ViewWindow::renderPrepare()
 {
+	storage->aquireData();
 	vector<PixelData> data = storage->data;
 	memset(pixels, 0, sizeof(Uint32) * storage->width * storage->height);
 
@@ -199,6 +224,7 @@ void ViewWindow::renderPrepare()
 			if(data[i].startHits)
 				steps.push_back(data[i].startSteps/(double)data[i].startHits);
 		}
+		sort(steps.begin(), steps.end());
 		for(int x = 0; x < storage->width; ++x)
 		{
 			for(int y = 0; y < storage->height; ++y)
@@ -242,6 +268,7 @@ void ViewWindow::renderPrepare()
 		}
 	}
 
+	storage->releaseData();
 	lastRendered = storage->computedSteps;
 }
 
